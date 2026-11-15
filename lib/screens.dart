@@ -574,6 +574,7 @@ class _SendSheetState extends State<SendSheet> {
         if (error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: TextStyle(color: scheme.error))),
         const SizedBox(height: 18),
         FilledButton(key: const Key('confirm-send'), onPressed: busy ? null : send, child: Text(tr('Confirm'))),
+        const SizedBox(height: 8),
         TextButton(onPressed: busy ? null : () => setState(() { recipient = null; error = null; }), child: Text(tr('Cancel'))),
       ]);
     }

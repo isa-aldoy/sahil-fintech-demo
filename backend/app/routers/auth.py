@@ -34,6 +34,16 @@ def _device(request: Request) -> str:
     return (request.headers.get("user-agent") or "Unknown device")[:200]
 
 
+def friendly_device(user_agent: str) -> str:
+    """'Mozilla/5.0 (Windows NT 10.0 ...) Chrome/...' -> 'Chrome on Windows'."""
+    ua = user_agent.lower()
+    browser = next((name for key, name in (("edg/", "Edge"), ("firefox", "Firefox"), ("chrome", "Chrome"),
+                                           ("safari", "Safari"), ("dart", "Sahil app")) if key in ua), "App")
+    system = next((name for key, name in (("android", "Android"), ("iphone", "iPhone"), ("ipad", "iPad"),
+                                          ("windows", "Windows"), ("mac os", "Mac"), ("linux", "Linux")) if key in ua), "")
+    return f"{browser} on {system}" if system else browser
+
+
 def _start_session(db: Session, user: User, request: Request) -> tuple[AuthSession, str]:
     s = get_settings()
     session = AuthSession(user_id=user.id, user_agent=_device(request), ip=ratelimit.client_ip(request),
@@ -192,7 +202,7 @@ def sessions(p: Principal = Depends(current), db: Session = Depends(get_db)):
         select(AuthSession).where(AuthSession.user_id == p.user.id, AuthSession.revoked_at.is_(None),
                                   AuthSession.expires_at > now()).order_by(AuthSession.last_seen_at.desc())
     ).scalars()
-    return [SessionOut(id=r.id, device=r.user_agent, created_at=r.created_at, last_seen_at=r.last_seen_at,
+    return [SessionOut(id=r.id, device=friendly_device(r.user_agent), created_at=r.created_at, last_seen_at=r.last_seen_at,
                        current=r.id == p.session_id) for r in rows]
 
 

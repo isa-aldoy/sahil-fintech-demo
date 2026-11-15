@@ -30,8 +30,8 @@ def reply(message: str, tools: Toolbox) -> str:
         if "error" in result:
             return ("تعذّر تجهيز التحويل: " if ar else "I couldn't set that up: ") + result["error"]
         if ar:
-            return f"جهّزت تحويل {result['amount_bhd']} د.ب إلى {result['to']}. راجع التفاصيل واضغط «تأكيد» للإرسال."
-        return f"I've prepared {result['amount_bhd']} BHD to {result['to']}. Check the details and press Confirm to send it."
+            return f"جهّزت تحويل {result['amount_bhd']} د.ب إلى {result['to']} — راجع التفاصيل واضغط «تأكيد» للإرسال."
+        return f"Ready to send {result['amount_bhd']} BHD to {result['to']} — check the details below and press Confirm."
 
     if re.search(r"balance|how much.*(have|left)|رصيد|كم.*(عندي|لدي)", low):
         accounts = tools.call("get_accounts", {})["accounts"]

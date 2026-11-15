@@ -161,3 +161,11 @@ def test_expired_session_is_rejected_even_with_valid_signature(alice, db):
     db.commit()
     token, _ = create_access_token(alice.id, uuid.UUID(sid))
     assert httpx.get(f"{BASE}/api/v1/accounts", headers={"Authorization": f"Bearer {token}"}).status_code == 401
+
+
+def test_devices_are_shown_with_friendly_names():
+    from app.routers.auth import friendly_device
+    assert friendly_device("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/142.0 Safari/537.36") == "Chrome on Windows"
+    assert friendly_device("Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/142.0 Mobile Safari/537.36") == "Chrome on Android"
+    assert friendly_device("Dart/3.9 (dart:io)") == "Sahil app"
+    assert friendly_device("") == "App"
