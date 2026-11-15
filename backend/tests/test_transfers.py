@@ -27,6 +27,16 @@ def test_internal_transfer_to_own_savings(alice):
     assert alice.balance() == 60_000 and alice.balance("savings") == 40_000
 
 
+def test_activity_can_be_limited_to_one_account_and_is_newest_first(alice, bob):
+    alice.send(str(alice.savings), "40")
+    alice.send(bob.handle, "1", note="latest")
+    everyday = alice.get("/api/v1/transactions", params={"kind": "current"}).json()
+    assert [t["note"] for t in everyday][:1] == ["latest"]
+    assert all(t["account_id"] == str(alice.current) for t in everyday)
+    assert [t["title"] for t in everyday if t["kind"] == "internal"] == ["Savings"]
+    assert alice.get("/api/v1/transactions", params={"kind": "everything"}).status_code == 422
+
+
 def test_cannot_overdraw(alice, bob):
     r = alice.send(bob.handle, "100.001")
     assert r.status_code == 409 and r.json()["error"]["code"] == "insufficient_funds"

@@ -105,8 +105,8 @@ class Customer:
     def headers(self) -> dict:
         return {"Authorization": f"Bearer {self.access}"}
 
-    def get(self, path: str, **kw) -> httpx.Response:
-        return httpx.get(BASE + path, headers=self.headers, timeout=30, **kw)
+    def get(self, path: str, headers: dict | None = None, **kw) -> httpx.Response:
+        return httpx.get(BASE + path, headers=headers or self.headers, timeout=30, **kw)
 
     def post(self, path: str, json=None, key: str | None = None, **kw) -> httpx.Response:
         headers = dict(self.headers)

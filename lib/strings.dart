@@ -72,9 +72,27 @@ const _ar = <String, String>{
   'offline': 'تعذّر الاتصال بساحل. تأكد من تشغيل الخادم.',
   'BHD': 'د.ب',
   'You': 'أنت',
+  'groceries': 'بقالة',
+  'bills': 'فواتير',
+  'transfer': 'تحويلات',
+  'shopping': 'تسوّق',
+  'food': 'مطاعم',
+  'fun': 'ترفيه',
+  'transport': 'مواصلات',
+  'income': 'دخل',
 };
 
-const _en = <String, String>{'offline': "Can't reach Sahil. Check that the server is running."};
+const _en = <String, String>{
+  'offline': "Can't reach Sahil. Check that the server is running.",
+  'groceries': 'Groceries',
+  'bills': 'Bills',
+  'transfer': 'Transfers',
+  'shopping': 'Shopping',
+  'food': 'Eating out',
+  'fun': 'Fun',
+  'transport': 'Transport',
+  'income': 'Income',
+};
 
 String tr(String key) => isArabic ? (_ar[key] ?? key) : (_en[key] ?? key);
 

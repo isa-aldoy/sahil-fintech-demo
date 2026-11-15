@@ -661,7 +661,7 @@ class _ActivityState extends State<ActivityTab> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5),
                           child: Row(children: [
-                            SizedBox(width: 86, child: Text('${c['category']}')),
+                            SizedBox(width: 92, child: Text(tr('${c['category']}'))),
                             Expanded(
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),

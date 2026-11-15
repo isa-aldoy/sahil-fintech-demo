@@ -39,7 +39,7 @@ def accounts(p: Principal = Depends(current), db: Session = Depends(get_db)):
 
 def list_transactions(db: Session, user_id: uuid.UUID, *, limit: int = 30, before: int | None = None,
                       search: str | None = None, direction: str | None = None,
-                      account_id: uuid.UUID | None = None) -> list[dict]:
+                      account_id: uuid.UUID | None = None, kind: str | None = None) -> list[dict]:
     """Ledger entries for accounts the user owns. The ownership join is the authorization check."""
     mine = aliased(Account)
     other = aliased(Account)
@@ -51,8 +51,10 @@ def list_transactions(db: Session, user_id: uuid.UUID, *, limit: int = 30, befor
         .join(other, other.id == func.coalesce(
             func.nullif(Transfer.from_account_id, LedgerEntry.account_id), Transfer.to_account_id))
         .join(other_user, other_user.id == other.user_id)
-        .order_by(LedgerEntry.id.desc()).limit(limit)
+        .order_by(Transfer.created_at.desc(), LedgerEntry.id.desc()).limit(limit)
     )
+    if kind:
+        q = q.where(mine.kind == kind)
     if before:
         q = q.where(LedgerEntry.id < before)
     if account_id:
@@ -90,10 +92,10 @@ def transactions(
     p: Principal = Depends(current), db: Session = Depends(get_db),
     limit: int = Query(30, ge=1, le=100), before: int | None = Query(None, ge=1),
     search: str | None = Query(None, max_length=40), direction: str | None = Query(None, pattern="^(in|out)$"),
-    account_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None, kind: str | None = Query(None, pattern="^(current|savings)$"),
 ):
     return list_transactions(db, p.user.id, limit=limit, before=before, search=search, direction=direction,
-                             account_id=account_id)
+                             account_id=account_id, kind=kind)
 
 
 def spending_summary(db: Session, user_id: uuid.UUID, days: int = 30) -> dict:

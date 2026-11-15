@@ -119,6 +119,7 @@ class Api {
   Future<List<dynamic>> transactions({String search = '', String? direction}) async {
     final q = <String, String>{
       'limit': '50',
+      'kind': 'current',
       if (search.isNotEmpty) 'search': search,
       if (direction != null) 'direction': direction,
     };

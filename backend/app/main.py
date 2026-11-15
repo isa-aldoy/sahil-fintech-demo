@@ -26,17 +26,6 @@ app = FastAPI(
 )
 errors.install(app)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_list,           # explicit allow-list, never "*"
-    allow_credentials=False,                    # tokens travel in the Authorization header, not cookies
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
-    expose_headers=["Idempotent-Replay", "Retry-After", "X-Request-Id"],
-    max_age=600,
-)
-
-
 @app.middleware("http")
 async def harden(request: Request, call_next):
     request_id = uuid.uuid4().hex[:16]
@@ -45,7 +34,12 @@ async def harden(request: Request, call_next):
     if length and length.isdigit() and int(length) > settings.max_body_bytes:
         response = JSONResponse({"error": {"code": "too_large", "message": "Request is too large."}}, status_code=413)
     else:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:  # last resort: still answer in the standard shape, with all headers
+            log.exception("%s unhandled error on %s %s", request_id, request.method, request.url.path)
+            response = JSONResponse({"error": {"code": "server_error", "message": "Something went wrong on our side."}},
+                                    status_code=500)
     h = response.headers
     h["X-Request-Id"] = request_id
     h["X-Content-Type-Options"] = "nosniff"
@@ -62,6 +56,19 @@ async def harden(request: Request, call_next):
     log.info("%s %s %s -> %s %.0fms", request_id, request.method, request.url.path, response.status_code,
              (time.perf_counter() - started) * 1000)
     return response
+
+
+# Added last so it is the outermost layer: even error responses carry CORS headers,
+# which lets the app show a proper message instead of a generic network failure.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_list,           # explicit allow-list, never "*"
+    allow_credentials=False,                    # tokens travel in the Authorization header, not cookies
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+    expose_headers=["Idempotent-Replay", "Retry-After", "X-Request-Id"],
+    max_age=600,
+)
 
 
 @app.get("/health", tags=["system"])

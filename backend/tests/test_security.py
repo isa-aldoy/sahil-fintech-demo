@@ -85,6 +85,20 @@ def test_errors_never_leak_internals(http, alice):
             assert leak not in r.text
 
 
+def test_unexpected_failures_stay_generic_and_keep_their_headers(alice, monkeypatch):
+    from app.routers import banking
+
+    def explode(*args, **kwargs):
+        raise RuntimeError("database password is hunter2")
+    monkeypatch.setattr(banking, "user_accounts", explode)
+    r = alice.get("/api/v1/accounts", headers={**alice.headers, "Origin": "http://localhost:5173"})
+    assert r.status_code == 500
+    assert r.json() == {"error": {"code": "server_error", "message": "Something went wrong on our side."}}
+    assert "hunter2" not in r.text
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert r.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
 def test_responses_never_contain_password_hashes_or_secrets(alice):
     from app.config import get_settings
     for path in ("/api/v1/auth/me", "/api/v1/accounts", "/api/v1/auth/sessions", "/api/v1/security/activity", "/api/v1/card"):

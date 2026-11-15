@@ -36,7 +36,7 @@ ThemeData sahilTheme(Brightness b) {
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(54),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: const TextStyle(fontFamily: 'Plex', fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
