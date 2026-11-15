@@ -33,7 +33,7 @@ Boundaries: (1) app ↔ API over the network, (2) API ↔ PostgreSQL, (3) API �
 | T5 | SQL injection | SQLAlchemy bound parameters everywhere; no string-built SQL | `test_sql_injection_attempts_are_inert` |
 | R1 | Customer denies an action | Audit entry for sign-ins, failures, lockouts, transfers, card changes, assistant drafts and confirmations | `test_security_events_are_audited` |
 | I1 | Reading another customer's data (IDOR) | Ownership is part of every query; foreign ids return 404 | `test_authorization.py` (all) |
-| I2 | Leaking internals or secrets | One error format, no stack traces; hashes/secrets never serialised; card shows last 4 only; API responses `no-store` | `test_errors_never_leak_internals`, `test_responses_never_contain…` |
+| I2 | Leaking internals or secrets | One error format, no stack traces; hashes/secrets never serialised; card shows last 4 only; API responses `no-store` | `test_errors_never_leak_internals`, `test_unexpected_failures_stay_generic…`, `test_responses_never_contain…` |
 | I3 | Customer enumeration via recipient lookup | Authenticated, 20/min, returns only "First L." | `test_recipient_lookup_reveals_only_a_short_display_name` |
 | I4 | Gemini key exposed to the client | Key read from `GEMINI_API_KEY` on the server only; never in responses or the app | `test_gemini_key_is_never_returned_by_any_endpoint` |
 | D1 | Flooding | Per-endpoint rate limits, 32 KB body cap, bounded page sizes and text lengths | `test_oversized_request_is_refused`, `test_registration_and_chat_are_rate_limited` |

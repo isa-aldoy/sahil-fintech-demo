@@ -12,6 +12,13 @@ portfolio project. It is simple on the surface and careful underneath:
 > Fictional data only. No real bank, no real money, no banking integrations. This is a demo and has
 > **not** been independently security-audited; it is not production banking software.
 
+## Screenshots
+
+Captured from the real app (the web build produced by CI) talking to the real API and PostgreSQL.
+More in [docs/screenshots/](docs/screenshots/).
+
+![Sahil screens: home, confirm a transfer, assistant draft, activity, card, security, Arabic, Arabic dark](docs/screenshots/overview.png)
+
 ## Run it on Windows (no programming needed)
 
 1. Download this repository (green **Code** button → **Download ZIP**, then unzip), or clone it.
@@ -64,7 +71,7 @@ flowchart LR
 | Money | `backend/app/transfers.py` | The only code that changes a balance. |
 | Assistant | `backend/app/assistant/` | `tools.py` is the complete list of what the model can do. |
 | Schema | `backend/migrations/` | Alembic. `0002` adds database-level integrity triggers. |
-| Tests | `backend/tests/`, `test/` | 95 backend tests incl. security and concurrency; Flutter widget tests. |
+| Tests | `backend/tests/`, `test/` | 98 backend tests incl. security and concurrency; Flutter widget tests. |
 
 ## Security at a glance
 

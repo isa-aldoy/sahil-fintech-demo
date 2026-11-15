@@ -1,5 +1,5 @@
 {"status":"ok","assistant":"built-in"}
-transfer ok, retry was not sent twice (927777b5-4f19-4468-a7c1-aa2f43d629c2)
-{"reply":"Here's what you have right now:\nEveryday: 433.250 BHD\nSavings: 120.000 BHD","proposal":null,"engine":"local"}
+transfer ok, retry was not sent twice (63861e2c-5272-4204-9231-a9a64820f83d)
+{"reply":"Here's what you have right now:\nEveryday: 420.750 BHD\nSavings: 120.000 BHD","proposal":null,"engine":"local"}
 anonymous access refused
 SMOKE TEST PASSED
