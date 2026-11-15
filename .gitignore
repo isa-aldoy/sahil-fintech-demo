@@ -10,3 +10,12 @@ coverage/
 .vscode/
 .DS_Store
 android/local.properties
+
+# Local secrets and environments: never commit
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/

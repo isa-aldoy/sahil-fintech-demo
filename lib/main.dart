@@ -1,244 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() => runApp(const FintechApp());
+import 'api.dart';
+import 'screens.dart';
+import 'strings.dart';
 
-class Entry {
-  final String title;
-  final String category;
-  final double amount;
-  final DateTime date;
-  const Entry(this.title, this.category, this.amount, this.date);
-}
+void main() => runApp(SahilApp(api: Api()));
 
-class FintechApp extends StatefulWidget {
-  const FintechApp({super.key});
-  @override
-  State<FintechApp> createState() => _FintechAppState();
-}
+const ink = Color(0xFF10212B);
+const tide = Color(0xFF0F5C5E);
+const coral = Color(0xFFE8603C);
+const sand = Color(0xFFF7F3EC);
 
-class _FintechAppState extends State<FintechApp> {
-  bool darkMode = false;
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Sahil · Fictional Banking Demo',
-    debugShowCheckedModeBanner: false,
-    themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
-    theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xff116e70)),
-    darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark, colorSchemeSeed: const Color(0xff50ddba)),
-    home: Dashboard(darkMode: darkMode, toggleTheme: () => setState(() => darkMode = !darkMode)),
+ThemeData sahilTheme(Brightness b) {
+  final dark = b == Brightness.dark;
+  final scheme = ColorScheme.fromSeed(seedColor: tide, brightness: b).copyWith(
+    primary: dark ? const Color(0xFF6FD6CF) : tide,
+    secondary: coral,
+    surface: dark ? const Color(0xFF0C1820) : sand,
+    surfaceContainerHighest: dark ? const Color(0xFF172832) : Colors.white,
   );
-}
-
-class Dashboard extends StatefulWidget {
-  final bool darkMode;
-  final VoidCallback toggleTheme;
-  const Dashboard({super.key, required this.darkMode, required this.toggleTheme});
-  @override
-  State<Dashboard> createState() => _DashboardState();
-}
-
-class _DashboardState extends State<Dashboard> {
-  int tab = 0;
-  bool hidden = false;
-  String query = '';
-  String filter = 'All';
-  final entries = <Entry>[
-    Entry('Monthly allowance', 'Income', 280, DateTime(2026, 11, 15)),
-    Entry('Coffee Corner', 'Food', -3.5, DateTime(2026, 11, 14)),
-    Entry('City Market', 'Shopping', -12.85, DateTime(2026, 11, 13)),
-    Entry('Mobile top-up', 'Utilities', -6, DateTime(2026, 11, 12)),
-    Entry('Refund', 'Income', 15.25, DateTime(2026, 11, 11)),
-  ];
-
-  double get balance => 420.75 + entries.fold<double>(0, (sum, e) => sum + e.amount);
-  double get income => entries.where((e) => e.amount > 0).fold<double>(0, (sum, e) => sum + e.amount);
-  double get spending => entries.where((e) => e.amount < 0).fold<double>(0, (sum, e) => sum - e.amount);
-  String bhd(double value) => '${value.toStringAsFixed(3)} BHD';
-
-  Future<void> transfer() async {
-    final recipient = TextEditingController();
-    final amount = TextEditingController();
-    final key = GlobalKey<FormState>();
-    try {
-      final submitted = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Simulate a transfer'),
-          content: Form(
-            key: key,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Demo only. No actual money is transferred.'),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: recipient,
-                  maxLength: 40,
-                  decoration: const InputDecoration(labelText: 'Recipient', border: OutlineInputBorder()),
-                  validator: (s) => s == null || s.trim().isEmpty ? 'Enter a recipient' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: amount,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Amount (BHD)', border: OutlineInputBorder()),
-                  validator: (s) {
-                    final v = double.tryParse(s?.trim() ?? '');
-                    if (v == null || !v.isFinite || v <= 0) return 'Enter a positive amount';
-                    if (v > balance) return 'Amount exceeds demo balance';
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () {
-                if (key.currentState!.validate()) Navigator.pop(ctx, true);
-              },
-              child: const Text('Simulate'),
-            ),
-          ],
-        ),
-      );
-      if (submitted == true && mounted) {
-        setState(() => entries.insert(0, Entry(recipient.text.trim(), 'Simulated transfer', -double.parse(amount.text.trim()), DateTime.now())));
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demo transaction saved locally. No money was sent.')));
-      }
-    } finally {
-      // Disposing after a dialog frame prevents stale controllers in the closing animation.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        recipient.dispose();
-        amount.dispose();
-      });
-    }
-  }
-
-  void deposit() {
-    setState(() => entries.insert(0, Entry('Demo deposit', 'Simulated income', 25, DateTime.now())));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added 25.000 BHD of imaginary funds.')));
-  }
-
-  Widget entryTile(Entry entry) => Card(
-    child: ListTile(
-      leading: CircleAvatar(child: Icon(entry.amount >= 0 ? Icons.south_west : Icons.north_east)),
-      title: Text(entry.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${entry.category} · ${entry.date.day}/${entry.date.month}/${entry.date.year}'),
-      trailing: Text('${entry.amount < 0 ? '-' : '+'}${bhd(entry.amount.abs())}', style: TextStyle(fontWeight: FontWeight.bold, color: entry.amount >= 0 ? Colors.teal : null)),
+  return ThemeData(
+    useMaterial3: true,
+    fontFamily: 'Plex', // bundled (OFL): covers Arabic and Latin, works offline
+    colorScheme: scheme,
+    scaffoldBackgroundColor: scheme.surface,
+    appBarTheme: AppBarTheme(backgroundColor: scheme.surface, surfaceTintColor: Colors.transparent, centerTitle: false),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: scheme.surfaceContainerHighest,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
     ),
-  );
-
-  Widget metric(String name, String value, IconData icon) => Card(
-    child: ListTile(leading: Icon(icon), title: Text(name), subtitle: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 21))),
-  );
-
-  Widget action(String name, IconData icon, VoidCallback onTap) => Expanded(
-    child: Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
-          child: Column(children: [Icon(icon), const SizedBox(height: 6), Text(name, style: const TextStyle(fontSize: 12))]),
-        ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(54),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontFamily: 'Plex', fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: scheme.surfaceContainerHighest,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: scheme.surfaceContainerHighest,
+      indicatorColor: scheme.primary.withAlpha(36),
+      height: 68,
+    ),
   );
+}
+
+class SahilApp extends StatefulWidget {
+  const SahilApp({super.key, required this.api});
+  final Api api;
+  @override
+  State<SahilApp> createState() => _SahilAppState();
+}
+
+class _SahilAppState extends State<SahilApp> {
+  @override
+  void initState() {
+    super.initState();
+    widget.api.onSignedOut = () {
+      if (mounted) setState(() {});
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final visible = entries.where((entry) {
-      final matches = '${entry.title} ${entry.category}'.toLowerCase().contains(query.toLowerCase());
-      return matches && (filter == 'All' || (filter == 'Money in' ? entry.amount > 0 : entry.amount < 0));
-    }).toList();
-
-    return Scaffold(
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: (i) => setState(() => tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Activity'),
-          NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Insights'),
-          NavigationDestination(icon: Icon(Icons.info_outline), label: 'About'),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 740),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Row(children: [
-                  const CircleAvatar(backgroundColor: Color(0xff50ddba), child: Icon(Icons.waves)),
-                  const SizedBox(width: 12),
-                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('SAHIL', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                    Text('A fictional fintech experience', style: TextStyle(fontSize: 11)),
-                  ])),
-                  IconButton(tooltip: 'Switch theme', onPressed: widget.toggleTheme, icon: Icon(widget.darkMode ? Icons.light_mode : Icons.dark_mode)),
-                ]),
-                const SizedBox(height: 24),
-                if (tab == 0) ...[
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(color: const Color(0xff142c4b), borderRadius: BorderRadius.circular(23)),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        const Expanded(child: Text('Available demo balance', style: TextStyle(color: Colors.white70))),
-                        IconButton(tooltip: 'Show or hide balance', onPressed: () => setState(() => hidden = !hidden), icon: Icon(hidden ? Icons.visibility_off : Icons.visibility, color: Colors.white)),
-                      ]),
-                      const SizedBox(height: 4),
-                      Text(hidden ? '••••••' : bhd(balance), style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 24),
-                      const Text('SAHIL / DEMO CARD                              •••• 2046', style: TextStyle(color: Color(0xff50ddba), fontSize: 11)),
-                    ]),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(children: [
-                    action('Transfer', Icons.send, transfer),
-                    action('Add funds', Icons.add, deposit),
-                    action('Activity', Icons.history, () => setState(() => tab = 1)),
-                  ]),
-                  const SizedBox(height: 20),
-                  const Text('Recent activity', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  ...entries.take(4).map(entryTile),
-                ] else if (tab == 1) ...[
-                  const Text('Transactions', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 14),
-                  TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search transactions', border: OutlineInputBorder())),
-                  const SizedBox(height: 12),
-                  Wrap(spacing: 8, children: ['All', 'Money in', 'Money out'].map((value) => ChoiceChip(
-                    label: Text(value), selected: filter == value, onSelected: (_) => setState(() => filter = value),
-                  )).toList()),
-                  const SizedBox(height: 12),
-                  if (visible.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No matching transactions.'))),
-                  ...visible.map(entryTile),
-                ] else if (tab == 2) ...[
-                  const Text('Insights', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  const Text('Based on fictional in-memory transactions only.'),
-                  const SizedBox(height: 20),
-                  metric('Money received', bhd(income), Icons.trending_up),
-                  metric('Money spent', bhd(spending), Icons.trending_down),
-                  metric('Demo balance', bhd(balance), Icons.account_balance_wallet),
-                ] else ...[
-                  const Text('About Sahil', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 18),
-                  const Text('A personal Flutter portfolio project demonstrating responsive UI, client-side state, transaction filtering, input validation, and theme switching.'),
-                  const SizedBox(height: 18),
-                  const Text('No real bank integration, credentials, payments, financial advice or personal data. All sample funds are imaginary.'),
-                  const SizedBox(height: 18),
-                  const Text('Technology: Flutter · Dart · Material 3'),
-                ],
-                const SizedBox(height: 32),
-                const Center(child: Text('DEMO ONLY · NOT AFFILIATED WITH ANY BANK', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))),
-              ],
-            ),
-          ),
+    return ListenableBuilder(
+      listenable: Listenable.merge([appLocale, appDark]),
+      builder: (context, _) => MaterialApp(
+        title: 'Sahil',
+        debugShowCheckedModeBanner: false,
+        locale: appLocale.value,
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: sahilTheme(Brightness.light),
+        darkTheme: sahilTheme(Brightness.dark),
+        themeMode: appDark.value ? ThemeMode.dark : ThemeMode.light,
+        home: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          child: widget.api.signedIn
+              ? HomeShell(key: const ValueKey('home'), api: widget.api)
+              : WelcomeScreen(key: const ValueKey('welcome'), api: widget.api, onSignedIn: () => setState(() {})),
         ),
       ),
     );
