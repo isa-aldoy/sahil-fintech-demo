@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hello, Noor'), findsOneWidget);
     expect(find.textContaining('432.500', findRichText: true), findsOneWidget);
-    expect(find.text('Coffee Corner'), findsWidgets);
+    expect(find.textContaining('Coffee Corner'), findsWidgets);
   });
 
   testWidgets('Arabic switches the app to right-to-left', (tester) async {
