@@ -42,7 +42,7 @@ def reply(message: str, tools: Toolbox) -> str:
         s = tools.call("get_spending_summary", {"days": 30})
         if not s["by_category"]:
             return "لم تصرف شيئاً خلال آخر 30 يوماً." if ar else "You haven't spent anything in the last 30 days."
-        top = "\n".join(f"• {k}: {v}" for k, v in list(s["by_category"].items())[:5])
+        top = "\n".join(f"• {k.capitalize()}: {v}" for k, v in list(s["by_category"].items())[:5])
         head = (f"صرفت {s['spent_bhd']} د.ب خلال آخر 30 يوماً:\n" if ar
                 else f"You spent {s['spent_bhd']} BHD in the last 30 days:\n")
         return head + top

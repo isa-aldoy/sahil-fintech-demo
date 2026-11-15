@@ -272,7 +272,7 @@ class TxTile extends StatelessWidget {
         child: Icon(icons[tx['category']] ?? (incoming ? Icons.south_west_rounded : Icons.north_east_rounded),
             size: 20, color: incoming ? scheme.primary : scheme.onSurface),
       ),
-      title: Text('${tx['title']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text('${tx['title']}\u200E', style: const TextStyle(fontWeight: FontWeight.w600)), // LRM keeps "Layla M." intact in Arabic
       subtitle: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Text(
         '${incoming ? '+' : ''}${bhd(tx['amount_fils'] as num)}',
@@ -326,7 +326,7 @@ class _DashboardState extends State<DashboardTab> {
             Row(children: [
               const SahilMark(size: 36),
               const SizedBox(width: 12),
-              Expanded(child: Text('${tr('Hello')}, $first', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
+              Expanded(child: Text('${tr('Hello')}${isArabic ? '،' : ','} $first', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
               IconButton(
                 tooltip: tr('Security'),
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileScreen(api: widget.api))),
@@ -566,7 +566,7 @@ class _SendSheetState extends State<SendSheet> {
         Card(
           child: ListTile(
             leading: CircleAvatar(child: Text('${recipient!['display_name']}'.characters.first)),
-            title: Text('${recipient!['display_name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            title: Text('${recipient!['display_name']}\u200E', style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text('@${recipient!['handle']}'),
             trailing: Text('${amount.text.trim()} ${tr('BHD')}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           ),
