@@ -25,6 +25,7 @@ jobs:
   app:
     name: Flutter analyze, test, build
     runs-on: ubuntu-latest
+    permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -36,6 +37,11 @@ jobs:
       - run: flutter build web --release --no-web-resources-cdn
       - uses: actions/upload-artifact@v4
         with: { name: web-build, path: build/web, retention-days: 7 }
+      - name: TEMP publish build to a scratch branch
+        run: |
+          cd build/web && git init -q -b ci-web-build && git add -A
+          git -c user.name=ci -c user.email=ci@example.invalid commit -qm build
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-web-build
   compose:
     name: Docker Compose smoke test
     runs-on: ubuntu-latest
