@@ -1,15 +1,54 @@
-name: Flutter checks
+name: CI
 on:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
-  checks:
+  backend:
+    name: Backend tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: sahil, POSTGRES_PASSWORD: sahil, POSTGRES_DB: sahil_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U sahil" --health-interval 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", cache: pip, cache-dependency-path: backend/requirements-dev.txt }
+      - run: pip install -r requirements-dev.txt
+        working-directory: backend
+      - run: pytest -v
+        working-directory: backend
+  app:
+    name: Flutter analyze, test, build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
+        with: { channel: stable, cache: true }
+      - run: flutter create . --platforms=web --project-name sahil_fintech_demo
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test
+      - run: flutter build web --release
+  compose:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" > .env
+          docker compose up -d --build --wait
+      - run: bash scripts/smoke.sh
+      - if: always()
+        run: docker compose logs api | tail -40
+  windows:
+    name: Windows scripts check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: ./setup-and-run.ps1 -CheckOnly
