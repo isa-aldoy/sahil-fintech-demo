@@ -33,7 +33,9 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
-      - run: flutter build web --release
+      - run: flutter build web --release --no-web-resources-cdn
+      - uses: actions/upload-artifact@v4
+        with: { name: web-build, path: build/web, retention-days: 7 }
   compose:
     name: Docker Compose smoke test
     runs-on: ubuntu-latest

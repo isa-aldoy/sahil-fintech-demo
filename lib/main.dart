@@ -22,6 +22,7 @@ ThemeData sahilTheme(Brightness b) {
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Plex', // bundled (OFL): covers Arabic and Latin, works offline
     colorScheme: scheme,
     scaffoldBackgroundColor: scheme.surface,
     appBarTheme: AppBarTheme(backgroundColor: scheme.surface, surfaceTintColor: Colors.transparent, centerTitle: false),
