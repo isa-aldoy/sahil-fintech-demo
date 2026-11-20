@@ -80,6 +80,8 @@ void main() {
   });
 
   testWidgets('signing in shows the dashboard with the balance from the API', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 1400)); // phone-shaped, tall enough for the whole home screen
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(SahilApp(api: Api(client: fakeBackend())));
     expect(find.text('Sign in'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('email')), 'demo@sahil.example');
