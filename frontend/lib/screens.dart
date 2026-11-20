@@ -1108,7 +1108,7 @@ class ProfileScreen extends StatelessWidget {
                       ListTile(
                         dense: true,
                         leading: const Icon(Icons.history_rounded, size: 20),
-                        title: Text('${a['title']}'),
+                        title: Text(tr('${a['title']}')),
                         trailing: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.parse('${a['at']}').toLocal()),
                             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
                       ),

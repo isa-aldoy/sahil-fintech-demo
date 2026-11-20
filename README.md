@@ -14,6 +14,13 @@
 
 </div>
 
+<details>
+<summary><b>New: money requests and statements</b> (click to see)</summary>
+
+![Request money, pay a request, statement download](docs/screenshots/requests.png)
+
+</details>
+
 > **Fictional money only.** No real bank, no real accounts, no payment integrations. This is a portfolio
 > project. It has **not** been independently audited and is not production banking software.
 
