@@ -354,7 +354,7 @@ class _DashboardState extends State<DashboardTab> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('${r['other_name']}\u200E ${tr('asked you for')} ${r['amount']}',
+                    Text('${r['other_name']}\u200E ${tr('asked you for')} ${r['amount']} ${tr('BHD')}',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     if ('${r['note']}'.isNotEmpty) Text('${r['note']}', style: TextStyle(color: scheme.onSurfaceVariant)),
                   ]),

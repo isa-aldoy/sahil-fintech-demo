@@ -91,7 +91,7 @@ void main() {
     expect(find.text('Hello, Noor'), findsOneWidget);
     expect(find.textContaining('432.500', findRichText: true), findsOneWidget);
     expect(find.textContaining('Coffee Corner'), findsWidgets);
-    expect(find.textContaining('asked you for 4.000'), findsOneWidget);
+    expect(find.textContaining('asked you for 4.000 BHD'), findsOneWidget);
     expect(find.text('Pay'), findsOneWidget);
   });
 
