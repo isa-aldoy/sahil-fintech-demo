@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'download.dart';
 import 'main.dart';
 import 'strings.dart';
 
@@ -297,9 +298,86 @@ class DashboardTab extends StatefulWidget {
 class _DashboardState extends State<DashboardTab> {
   bool hidden = false;
 
-  Future<(List, List)> load() async {
-    final r = await Future.wait([widget.api.accounts(), widget.api.transactions()]);
-    return (r[0], r[1]);
+  Future<(List, List, Map)> load() async {
+    final r = await Future.wait([widget.api.accounts(), widget.api.transactions(), widget.api.requests()]);
+    return (r[0] as List, r[1] as List, r[2] as Map);
+  }
+
+  Future<void> act(Future<void> Function() work, String done) async {
+    try {
+      await work();
+      if (!mounted) return;
+      toast(context, done);
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) toast(context, errorText(e));
+    }
+  }
+
+  Future<void> pay(Map r) async {
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => _SheetBody(title: tr('Pay request'), children: [
+        Card(
+          child: ListTile(
+            leading: CircleAvatar(child: Text('${r['other_name']}'.characters.first)),
+            title: Text('${r['other_name']}\u200E', style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: '${r['note']}'.isEmpty ? null : Text('${r['note']}'),
+            trailing: Text('${r['amount']} ${tr('BHD')}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          ),
+        ),
+        const SizedBox(height: 18),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('Pay'))),
+        const SizedBox(height: 8),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('Cancel'))),
+      ]),
+    );
+    if (ok == true) await act(() => widget.api.payRequest('${r['id']}', newIdempotencyKey()), tr('Paid'));
+  }
+
+  Widget requestsCard(Map requests) {
+    final scheme = Theme.of(context).colorScheme;
+    final incoming = requests['incoming'] as List;
+    final waiting = (requests['outgoing'] as List).where((r) => r['status'] == 'pending').toList();
+    if (incoming.isEmpty && waiting.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (final r in incoming)
+              Row(children: [
+                CircleAvatar(backgroundColor: scheme.secondary.withAlpha(36),
+                    child: Icon(Icons.call_received_rounded, color: scheme.secondary, size: 20)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('${r['other_name']}\u200E ${tr('asked you for')} ${r['amount']} ${tr('BHD')}',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if ('${r['note']}'.isNotEmpty) Text('${r['note']}', style: TextStyle(color: scheme.onSurfaceVariant)),
+                  ]),
+                ),
+                TextButton(onPressed: () => act(() => widget.api.declineRequest('${r['id']}'), tr('Done')), child: Text(tr('Decline'))),
+                FilledButton(
+                  style: FilledButton.styleFrom(minimumSize: const Size(64, 40), backgroundColor: scheme.secondary),
+                  onPressed: () => pay(r as Map), child: Text(tr('Pay'))),
+              ]),
+            for (final r in waiting)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(backgroundColor: scheme.primary.withAlpha(28),
+                    child: Icon(Icons.schedule_rounded, color: scheme.primary, size: 20)),
+                title: Text('${tr('You asked')} ${r['other_name']}\u200E', style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('${r['amount']} ${tr('BHD')}${'${r['note']}'.isEmpty ? '' : ' · ${r['note']}'}'),
+                trailing: TextButton(onPressed: () => act(() => widget.api.cancelRequest('${r['id']}'), tr('Done')),
+                    child: Text(tr('Cancel'))),
+              ),
+          ]),
+        ),
+      ),
+    );
   }
 
   Map account(List accounts, String kind) => accounts.firstWhere((a) => a['kind'] == kind) as Map;
@@ -314,10 +392,10 @@ class _DashboardState extends State<DashboardTab> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final first = '${widget.api.user?['full_name'] ?? ''}'.split(' ').first;
-    return Loader<(List, List)>(
+    return Loader<(List, List, Map)>(
       load: load,
       builder: (context, data, reload) {
-        final (accounts, txs) = data;
+        final (accounts, txs, requests) = data;
         final current = account(accounts, 'current');
         final savings = account(accounts, 'savings');
         return RefreshIndicator(
@@ -375,15 +453,18 @@ class _DashboardState extends State<DashboardTab> {
             const SizedBox(height: 18),
             Row(children: [
               _Action(Icons.north_east_rounded, tr('Send'), primary: true, onTap: () => open(SendSheet(api: widget.api, from: '${current['id']}'))),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
+              _Action(Icons.call_received_rounded, tr('Request'), onTap: () => open(RequestSheet(api: widget.api))),
+              const SizedBox(width: 10),
               _Action(Icons.add_rounded, tr('Add money'),
                   onTap: () => open(AmountSheet(title: tr('Add demo money'), action: tr('Add'),
                       run: (amount, key) => widget.api.topUp('${current['id']}', amount, key)))),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               _Action(Icons.savings_outlined, tr('Save'),
                   onTap: () => open(AmountSheet(title: tr('Move to savings'), action: tr('Move'),
                       run: (amount, key) => widget.api.transfer('${current['id']}', '${savings['id']}', amount, '', key)))),
             ]),
+            requestsCard(requests),
             const SizedBox(height: 26),
             Row(children: [
               Expanded(child: Text(tr('Recent activity'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
@@ -428,7 +509,8 @@ class _Action extends StatelessWidget {
             child: Column(children: [
               Icon(icon, color: fg),
               const SizedBox(height: 6),
-              Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(label, maxLines: 1, overflow: TextOverflow.fade, softWrap: false,
+                  style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12.5)),
             ]),
           ),
         ),
@@ -452,6 +534,52 @@ class _SheetBody extends StatelessWidget {
           ...children,
         ]),
       );
+}
+
+/// Ask someone for money: who, how much, what for.
+class RequestSheet extends StatefulWidget {
+  const RequestSheet({super.key, required this.api});
+  final Api api;
+  @override
+  State<RequestSheet> createState() => _RequestSheetState();
+}
+
+class _RequestSheetState extends State<RequestSheet> {
+  final from = TextEditingController();
+  final amount = TextEditingController();
+  final note = TextEditingController();
+  bool busy = false;
+  String? error;
+
+  Future<void> go() async {
+    setState(() { busy = true; error = null; });
+    try {
+      await widget.api.requestMoney(from.text.trim().replaceFirst('@', ''), amount.text.trim(), note.text.trim());
+      if (!mounted) return;
+      toast(context, tr('Request sent'));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) setState(() { error = errorText(e); busy = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => _SheetBody(title: tr('Request money'), children: [
+        TextField(controller: from, autofocus: true, decoration: InputDecoration(hintText: tr('From (@name)'))),
+        const SizedBox(height: 12),
+        TextField(
+          controller: amount,
+          textDirection: TextDirection.ltr,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(hintText: tr('Amount (BHD)')),
+        ),
+        const SizedBox(height: 12),
+        TextField(controller: note, maxLength: 140, decoration: InputDecoration(hintText: tr('Note (optional)'), counterText: '')),
+        if (error != null)
+          Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+        const SizedBox(height: 18),
+        FilledButton(onPressed: busy ? null : go, child: Text(tr('Send request'))),
+      ]);
 }
 
 /// One amount, one button. Used for "Add money" and "Move to savings".
@@ -623,10 +751,28 @@ class _ActivityState extends State<ActivityTab> {
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-        child: TextField(
-          onSubmitted: (v) => setState(() => search = v.trim()),
-          decoration: InputDecoration(hintText: tr('Search'), prefixIcon: const Icon(Icons.search)),
-        ),
+        child: Row(children: [
+          Expanded(
+            child: TextField(
+              onSubmitted: (v) => setState(() => search = v.trim()),
+              decoration: InputDecoration(hintText: tr('Search'), prefixIcon: const Icon(Icons.search)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: tr('Download statement'),
+            onPressed: () async {
+              try {
+                final csv = await widget.api.statementCsv();
+                final downloaded = await saveTextFile('sahil-statement.csv', csv);
+                if (context.mounted) toast(context, tr(downloaded ? 'Statement downloaded' : 'Statement copied'));
+              } catch (e) {
+                if (context.mounted) toast(context, errorText(e));
+              }
+            },
+            icon: const Icon(Icons.download_rounded),
+          ),
+        ]),
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -962,7 +1108,7 @@ class ProfileScreen extends StatelessWidget {
                       ListTile(
                         dense: true,
                         leading: const Icon(Icons.history_rounded, size: 20),
-                        title: Text('${a['title']}'),
+                        title: Text(tr('${a['title']}')),
                         trailing: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.parse('${a['at']}').toLocal()),
                             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
                       ),

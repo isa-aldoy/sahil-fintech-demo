@@ -36,7 +36,10 @@ Boundaries: (1) app ↔ API over the network, (2) API ↔ PostgreSQL, (3) API �
 | I2 | Leaking internals or secrets | One error format, no stack traces; hashes/secrets never serialised; card shows last 4 only; API responses `no-store` | `test_errors_never_leak_internals`, `test_unexpected_failures_stay_generic…`, `test_responses_never_contain…` |
 | I3 | Customer enumeration via recipient lookup | Authenticated, 20/min, returns only "First L." | `test_recipient_lookup_reveals_only_a_short_display_name` |
 | I4 | Gemini key exposed to the client | Key read from `GEMINI_API_KEY` on the server only; never in responses or the app | `test_gemini_key_is_never_returned_by_any_endpoint` |
-| D1 | Flooding | Per-endpoint rate limits, 32 KB body cap, bounded page sizes and text lengths | `test_oversized_request_is_refused`, `test_registration_and_chat_are_rate_limited` |
+| E3 | Paying, declining or cancelling someone else's money request | Requests are loaded only for the requester or payer; each action is limited to the right one of them; others get 404 | `test_only_the_right_person_can_act_on_a_request` |
+| T6 | A request paid twice from two devices | Request row locked before paying; status checked under the lock; DB constraint ties `paid` to exactly one transfer | `test_parallel_pay_taps_with_different_keys_pay_only_once` |
+| T7 | Formula injection through the CSV statement (a sender writes `=HYPERLINK(...)` in a note) | Text cells starting with `= + - @` are prefixed with `'` | `test_statement_csv_is_mine_only_and_formula_safe` |
+| D1 | Flooding | Per-endpoint rate limits, 32 KB body cap, bounded page sizes and text lengths | `test_oversized_request_is_refused`, `test_registration_and_chat_are_rate_limited`, `test_request_spam_is_limited` |
 | E1 | Calling protected routes without signing in | Single auth dependency; a test walks every route in the OpenAPI schema | `test_every_api_route_rejects_anonymous_callers` |
 | E2 | Mass-assignment (setting `kind`, `initiated_by`…) | Pydantic models with `extra="forbid"` | `test_unknown_fields_are_rejected` |
 | A1 | Assistant reads other customers' data | Tools are bound to the authenticated user in server code; model-supplied ids are ignored | `test_model_cannot_reach_other_customers_even_if_it_tries` |

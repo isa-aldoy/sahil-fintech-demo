@@ -36,6 +36,15 @@ MockClient fakeBackend() => MockClient((request) async {
            'title': 'Coffee Corner', 'category': 'food', 'note': '', 'kind': 'card', 'created_at': '2026-11-14T09:00:00Z'},
         ]);
       }
+      if (path.endsWith('/requests')) {
+        return json({
+          'incoming': [
+            {'id': 'q1', 'direction': 'incoming', 'other_name': 'Layla M.', 'other_handle': 'layla', 'amount_fils': 4000,
+             'amount': '4.000', 'note': 'Movie tickets', 'status': 'pending', 'created_at': '2026-11-15T09:00:00Z'},
+          ],
+          'outgoing': [],
+        });
+      }
       if (path.endsWith('/insights')) {
         return json({'days': 30, 'spent_fils': 1800, 'spent': '1.800', 'received_fils': 0, 'received': '0.000', 'categories': []});
       }
@@ -71,6 +80,8 @@ void main() {
   });
 
   testWidgets('signing in shows the dashboard with the balance from the API', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 1400)); // phone-shaped, tall enough for the whole home screen
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(SahilApp(api: Api(client: fakeBackend())));
     expect(find.text('Sign in'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('email')), 'demo@sahil.example');
@@ -80,6 +91,8 @@ void main() {
     expect(find.text('Hello, Noor'), findsOneWidget);
     expect(find.textContaining('432.500', findRichText: true), findsOneWidget);
     expect(find.textContaining('Coffee Corner'), findsWidgets);
+    expect(find.textContaining('asked you for 4.000 BHD'), findsOneWidget);
+    expect(find.text('Pay'), findsOneWidget);
   });
 
   testWidgets('Arabic switches the app to right-to-left', (tester) async {

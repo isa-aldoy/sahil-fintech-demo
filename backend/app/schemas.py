@@ -111,6 +111,16 @@ class TransferIn(AmountIn):
         return _clean(v)
 
 
+class RequestIn(AmountIn):
+    to: str = Field(min_length=2, max_length=40, description="The @handle of the person you're asking")
+    note: str = Field(default="", max_length=140)
+
+    @field_validator("note", "to")
+    @classmethod
+    def _text(cls, v: str) -> str:
+        return _clean(v)
+
+
 class TransferOut(BaseModel):
     id: uuid.UUID
     amount_fils: int

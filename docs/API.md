@@ -28,6 +28,12 @@ Errors always look like `{"error": {"code": "...", "message": "..."}}`.
 | GET | `/api/v1/card` | Card |
 | PATCH | `/api/v1/card` | Update Card |
 | GET | `/api/v1/security/activity` | The signed-in user's own security events (never anyone else's). |
+| GET | `/api/v1/requests` | Pending requests waiting on me, plus my own recent requests. |
+| POST | `/api/v1/requests` | Create Request |
+| POST | `/api/v1/requests/{request_id}/pay` | Pay Request |
+| POST | `/api/v1/requests/{request_id}/decline` | Decline Request |
+| POST | `/api/v1/requests/{request_id}/cancel` | Cancel Request |
+| GET | `/api/v1/statement.csv` | Statement |
 | POST | `/api/chat` | Send a message to the signed-in user's personal assistant and get its text reply. |
 | GET | `/api/chat/history` | History |
 | DELETE | `/api/chat/history` | Clear History |

@@ -38,7 +38,7 @@ class Api {
   bool get signedIn => _access != null;
 
   Future<dynamic> _send(String method, String path,
-      {Object? body, String? key, bool auth = true, bool retry = true}) async {
+      {Object? body, String? key, bool auth = true, bool retry = true, bool raw = false}) async {
     final req = http.Request(method, Uri.parse('$baseUrl$path'));
     req.headers['Content-Type'] = 'application/json';
     if (auth && _access != null) req.headers['Authorization'] = 'Bearer $_access';
@@ -54,7 +54,7 @@ class Api {
     }
     if (res.statusCode == 401 && auth && retry && _refresh != null) {
       if (await _refreshOnce()) {
-        return _send(method, path, body: body, key: key, retry: false);
+        return _send(method, path, body: body, key: key, retry: false, raw: raw);
       }
       _clear();
       onSignedOut?.call();
@@ -69,6 +69,7 @@ class Api {
       } catch (_) {}
       throw ApiException(res.statusCode, code, message);
     }
+    if (raw) return utf8.decode(res.bodyBytes);
     if (res.bodyBytes.isEmpty) return null;
     return jsonDecode(utf8.decode(res.bodyBytes));
   }
@@ -155,4 +156,16 @@ class Api {
   Future<List<dynamic>> chatHistory() async => await _send('GET', '/api/chat/history') as List;
   Future<void> confirmAction(String id) async => _send('POST', '/api/v1/assistant/actions/$id/confirm');
   Future<void> cancelAction(String id) async => _send('POST', '/api/v1/assistant/actions/$id/cancel');
+
+  Future<Map<String, dynamic>> requests() async =>
+      Map<String, dynamic>.from(await _send('GET', '/api/v1/requests') as Map);
+  Future<void> requestMoney(String to, String amount, String note) async =>
+      _send('POST', '/api/v1/requests', body: {'to': to, 'amount': amount, 'note': note});
+  Future<void> payRequest(String id, String key) async => _send('POST', '/api/v1/requests/$id/pay', key: key);
+  Future<void> declineRequest(String id) async => _send('POST', '/api/v1/requests/$id/decline');
+  Future<void> cancelRequest(String id) async => _send('POST', '/api/v1/requests/$id/cancel');
+
+  /// The Everyday account statement as CSV text (UTF-8 with BOM, so Excel shows Arabic correctly).
+  Future<String> statementCsv({int days = 30}) async =>
+      await _send('GET', '/api/v1/statement.csv?days=$days', raw: true) as String;
 }
