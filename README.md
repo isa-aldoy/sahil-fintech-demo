@@ -1,92 +1,137 @@
-# Sahil — digital banking demo
+<div align="center">
 
-Sahil (ساحل, "shore") is an **original, fictional** banking app for Bahrain, built as an engineering
-portfolio project. It is simple on the surface and careful underneath:
+# Sahil · ساحل
 
-- **Flutter app** (Arabic and English, light and dark) that talks only to its own API.
-- **FastAPI + PostgreSQL backend** with a double-entry ledger, migrations and persistent data.
-- **Security first**: every control below is implemented in code and covered by automated tests.
-- **Personal AI assistant** (Google Gemini, key kept on the server) that sees only the signed-in
-  user's data and cannot move money without the user pressing Confirm.
+**A full-stack digital banking demo for Bahrain: a Flutter app, a FastAPI + PostgreSQL backend, and a personal AI assistant, built with security first.**
 
-> Fictional data only. No real bank, no real money, no banking integrations. This is a demo and has
-> **not** been independently security-audited; it is not production banking software.
+[![CI](https://github.com/isa-aldoy/sahil-fintech-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/isa-aldoy/sahil-fintech-demo/actions/workflows/ci.yml)
+![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20PostgreSQL%2016-0F5C5E)
+![Frontend](https://img.shields.io/badge/frontend-Flutter%20(web%20%7C%20Android)-0F5C5E)
+![Tests](https://img.shields.io/badge/backend%20tests-106%20passing-2E7D32)
+![Languages](https://img.shields.io/badge/UI-English%20%7C%20العربية-E8603C)
 
-## Screenshots
+![Sahil screens](docs/screenshots/overview.png)
 
-Captured from the real app (the web build produced by CI) talking to the real API and PostgreSQL.
-More in [docs/screenshots/](docs/screenshots/).
+</div>
 
-![Sahil screens: home, confirm a transfer, assistant draft, activity, card, security, Arabic, Arabic dark](docs/screenshots/overview.png)
+> **Fictional money only.** No real bank, no real accounts, no payment integrations. This is a portfolio
+> project. It has **not** been independently audited and is not production banking software.
 
-## Run it on Windows (no programming needed)
+## What it does
 
-1. Download this repository (green **Code** button → **Download ZIP**, then unzip), or clone it.
-2. Double-click **`START-SAHIL.cmd`**.
-3. Approve any tool it offers to install (Git, Docker Desktop, Flutter, Chrome). If it installed
-   something, start Docker Desktop once and double-click `START-SAHIL.cmd` again.
-4. The app opens in Chrome at `http://localhost:5173`. Sign in with the demo account:
-   `demo@sahil.example` / `Sahil-Demo-2026`. Other demo people to send money to: `layla`, `yusuf`.
+| For the customer | What happens underneath |
+|---|---|
+| Sign in, see balance and recent activity | Argon2id passwords, short-lived tokens checked against a revocable server-side session |
+| Send money in two taps, with a review screen | Row-locked, idempotent transfer into a double-entry ledger; PostgreSQL refuses overdrafts |
+| Request money; the other person pays or declines | Only the payer can pay, only once, even with parallel taps; same limits as a transfer |
+| Move money to savings, add demo money | Same ledger path, with per-transaction and daily limits |
+| Search activity, see spending by category, download a statement | Queries scoped to the signed-in user; CSV export protected against formula injection |
+| Freeze the card, turn online payments off | Every change written to a tamper-evident audit log |
+| Ask the assistant "how much did I spend?" or "send 5 to layla" | Gemini sees only that user's masked data and can only **draft** a transfer the user must confirm |
+| See signed-in devices, sign one out, sign out everywhere | Sessions revoked in the database take effect on the next request |
+| Arabic or English, light or dark | Full right-to-left layout, bundled Arabic/Latin font |
 
-`stop.ps1` stops everything (data is kept). `test.ps1` runs all tests.
+## Project layout
 
-The setup script asks once for an optional Gemini API key and saves it in a local `.env` file that
-git ignores. Without a key the assistant still works using a built-in engine.
-
-## Run it on macOS / Linux
-
-```sh
-printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nGEMINI_API_KEY=\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" > .env
-docker compose up -d --build --wait        # database + API on http://localhost:8000
-bash scripts/smoke.sh                      # end-to-end check
-flutter create . --platforms=web --project-name sahil_fintech_demo
-flutter run -d chrome --web-port 5173
 ```
+sahil-fintech-demo/
+├── backend/            Python · FastAPI · SQLAlchemy · Alembic   ← the server and all business rules
+│   ├── app/
+│   │   ├── routers/    auth, banking, requests, chat (HTTP endpoints)
+│   │   ├── transfers.py    the only code that changes a balance
+│   │   ├── assistant/      Gemini client, built-in fallback, the tools the AI may use
+│   │   ├── audit.py        hash-chained audit log
+│   │   └── security.py     password hashing and tokens
+│   ├── migrations/     database schema, versioned (0002 adds integrity triggers)
+│   └── tests/          106 tests: auth, authorization, transfers, concurrency, security, AI, requests
+├── frontend/           Dart · Flutter                            ← the app; talks only to the API
+│   ├── lib/            screens, API client, Arabic/English strings
+│   └── test/           widget tests against a fake backend
+├── docs/               security design and threat model, API reference, screenshots, test evidence
+├── docker-compose.yml  PostgreSQL + API for local use
+└── START-SAHIL.cmd     one double-click setup and launch on Windows
+```
+
+**Why two languages?** Flutter is excellent for the app, but the server needs a mature backend ecosystem
+for databases, migrations, password hashing and testing. The backend is Python (FastAPI); the Flutter app
+holds no business rules and no secrets, and can do nothing the API does not allow.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Device
-    A[Flutter app<br/>tokens in memory only]
+  subgraph frontend["frontend/ (Flutter)"]
+    A[App<br/>tokens in memory only]
   end
-  subgraph Server["Docker Compose"]
-    B[FastAPI<br/>validation · auth · rate limits]
+  subgraph backend["backend/ (FastAPI, Docker)"]
+    B[API layer<br/>validation · auth · rate limits]
     T[Transfer engine<br/>row locks · idempotency]
     AS[Assistant<br/>user-bound tools]
     D[(PostgreSQL<br/>ledger · audit chain · constraints)]
   end
-  G[Google Gemini API]
-  A -- HTTPS/JSON + Bearer token --> B
+  G[Google Gemini]
+  A -- JSON + Bearer token --> B
   B --> T --> D
   B --> AS --> D
   AS -. masked, user-only data .-> G
-  A -. "Confirm" tap .-> T
 ```
 
-| Layer | Where | Notes |
+## Security
+
+The full design, a STRIDE threat model and an honest list of limits are in
+**[docs/SECURITY.md](docs/SECURITY.md)**. Every row below is implemented in code and has an automated test.
+
+| Control | How | Test file |
 |---|---|---|
-| App | `lib/` | 4 tabs: Home, Activity, Assistant, Card. Security screen behind the shield icon. |
-| API | `backend/app/routers/` | `/api/v1/*` and `POST /api/chat`. Interactive docs at `/docs`. |
-| Money | `backend/app/transfers.py` | The only code that changes a balance. |
-| Assistant | `backend/app/assistant/` | `tools.py` is the complete list of what the model can do. |
-| Schema | `backend/migrations/` | Alembic. `0002` adds database-level integrity triggers. |
-| Tests | `backend/tests/`, `test/` | 98 backend tests incl. security and concurrency; Flutter widget tests. |
+| Password storage | Argon2id, weak-password rules, equal-time responses for unknown e-mails | `test_auth.py` |
+| Sessions | 10-minute access token tied to a database session; single-use rotating refresh tokens stored hashed; reuse revokes the session | `test_auth.py` |
+| Brute force | Per-IP and per-account rate limits, account lockout stored in the database | `test_security.py` |
+| Authorization | Every query scoped to the token's user; a test calls every route without a token | `test_authorization.py` |
+| Money integrity | Integer fils, no floats; server-side limits; one database transaction per transfer | `test_transfers.py` |
+| Race conditions | `SELECT … FOR UPDATE` in a fixed order; 40 parallel requests cannot overspend | `test_concurrency.py` |
+| Duplicate payments | Mandatory `Idempotency-Key`; retries replay the original result | `test_transfers.py` |
+| Database guarantees | `CHECK` forbids overdraft; ledger and audit log are append-only; each transfer must balance | `test_transfers.py` |
+| Audit trail | Hash-chained log; editing any row is detected | `test_security.py` |
+| Secrets | From the environment only; the app refuses to start with a weak secret; `.env` is git-ignored | `test_security.py` |
+| AI safety | No money-moving tool; drafts expire; prompt injection in a transaction note cannot send money | `test_assistant.py` |
 
-## Security at a glance
+Test output: [docs/evidence/](docs/evidence/) · API reference: [docs/API.md](docs/API.md) (interactive at `/docs` when running).
 
-Full detail, threat model and known limits: **[docs/SECURITY.md](docs/SECURITY.md)**.
-API reference: **[docs/API.md](docs/API.md)**. Test output: **[docs/evidence/](docs/evidence/)**.
+## Run it
 
-| Control | Implementation | Proven by |
-|---|---|---|
-| Password storage | Argon2id; weak-password rules; equal-time login | `test_auth.py` |
-| Sessions | 10-min signed access token checked against a server-side session; single-use rotating refresh tokens stored hashed; reuse detection | `test_auth.py` |
-| Brute force | Per-IP and per-account rate limits + database-backed lockout | `test_security.py`, `test_auth.py` |
-| Authorization | Every query is scoped to the token's user; other people's ids answer 404 | `test_authorization.py` |
-| Transfers | Integer fils, server-side validation and limits, one DB transaction | `test_transfers.py` |
-| Concurrency | `SELECT … FOR UPDATE` in fixed order; DB `CHECK` forbids overdraft | `test_concurrency.py` |
-| Duplicates | Mandatory `Idempotency-Key`; retries replay the stored result | `test_transfers.py`, `test_concurrency.py` |
-| Audit | Hash-chained, append-only log (DB triggers reject edits) | `test_security.py` |
-| Secrets | Environment only; app refuses to start with a weak secret; `.env` git-ignored | `test_security.py` |
-| Assistant | User-bound tools, no money-moving tool, confirm step, prompt-injection test | `test_assistant.py` |
+### Windows: no programming needed
+
+1. Download the repository (green **Code** button → **Download ZIP**), then unzip it.
+2. Double-click **`START-SAHIL.cmd`**. It checks for Git, Docker Desktop, Flutter and Chrome and offers
+   to install anything missing through `winget`, asking you first.
+3. Paste a Google Gemini API key when asked, or press Enter to use the built-in assistant.
+4. The app opens at `http://localhost:5173`. Demo sign-in: `demo@sahil.example` / `Sahil-Demo-2026`.
+   Other demo people: `layla`, `yusuf`.
+
+`stop.ps1` stops the server (your data is kept) and `test.ps1` runs every test.
+
+### macOS / Linux
+
+```sh
+printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nGEMINI_API_KEY=\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" > .env
+docker compose up -d --build --wait        # backend + database on http://localhost:8000
+bash scripts/smoke.sh                      # end-to-end check
+
+cd frontend
+flutter create . --platforms=web --project-name sahil_fintech_demo
+flutter run -d chrome --web-port 5173
+```
+
+### Run the tests
+
+```sh
+cd backend && pip install -r requirements-dev.txt && pytest      # needs a PostgreSQL test database
+cd frontend && flutter test
+```
+
+CI runs all of these on every push, plus a Docker Compose end-to-end check and a Windows script check.
+
+## Known limits
+
+No independent penetration test; local demo runs over plain HTTP; no multi-factor authentication;
+rate-limit counters live in one process. Details in [docs/SECURITY.md](docs/SECURITY.md#known-limits-honest-list).

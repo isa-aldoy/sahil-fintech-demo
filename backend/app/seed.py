@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .db import SessionLocal
-from .models import Account, Transfer, User
+from .models import Account, PaymentRequest, Transfer, User
 from .routers.auth import create_user, new_account_number
 from .security import hash_password, now
 from .transfers import move_money
@@ -77,6 +77,8 @@ def seed_demo(db: Session) -> bool:
         t = move_money(db, from_id=src, to_id=dst, amount_fils=fils, kind=kind, note=note,
                        initiated_by=users[0].id, source="seed")
         _backdate(db, t.transfer.id, days)
+    # One request waiting for the demo user, so the feature is visible straight away.
+    db.add(PaymentRequest(requester_id=users[1].id, payer_id=users[0].id, amount_fils=4_000, note="Movie tickets"))
     return True
 
 

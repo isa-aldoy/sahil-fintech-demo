@@ -142,7 +142,8 @@ try {
 } catch { Fail 'The demo account could not sign in.' 'Run "docker compose logs api".' }
 
 Step 'Preparing the app'
-if (-not (Test-Path (Join-Path $repo 'web'))) {
+Set-Location (Join-Path $repo 'frontend')   # the Flutter app lives in frontend/, the API in backend/
+if (-not (Test-Path 'web')) {
     flutter create . --platforms=web,android --project-name sahil_fintech_demo | Out-Null
 }
 flutter pub get

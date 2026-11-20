@@ -19,3 +19,12 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .venv/
+
+# Platform folders generated locally by `flutter create` (setup-and-run.ps1 does this)
+frontend/web/
+frontend/android/
+frontend/ios/
+frontend/linux/
+frontend/macos/
+frontend/windows/
+frontend/.metadata

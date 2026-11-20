@@ -230,6 +230,9 @@ _FRIENDLY = {
     "transfer.created": "Money sent", "account.topup": "Demo money added", "card.updated": "Card settings changed",
     "assistant.transfer_proposed": "Assistant drafted a transfer", "assistant.transfer_confirmed": "You confirmed an assistant transfer",
     "assistant.transfer_cancelled": "You cancelled an assistant transfer",
+    "request.created": "You requested money", "request.paid": "You paid a request",
+    "request.declined": "You declined a request", "request.cancelled": "You cancelled a request",
+    "statement.downloaded": "Statement downloaded",
 }
 
 

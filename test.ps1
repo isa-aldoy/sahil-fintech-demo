@@ -23,8 +23,12 @@ Run 'End-to-end smoke check (API must be running)' {
     $global:LASTEXITCODE = if ($h.status -eq 'ok') { 0 } else { 1 }
 }
 if (Get-Command flutter -ErrorAction SilentlyContinue) {
+    Push-Location frontend
+    if (-not (Test-Path 'web')) { flutter create . --platforms=web,android --project-name sahil_fintech_demo | Out-Null }
+    flutter pub get | Out-Null
     Run 'Flutter analyze' { flutter analyze --no-fatal-infos }
     Run 'Flutter tests' { flutter test }
+    Pop-Location
 } else { Write-Host "`nFlutter is not installed - app tests skipped." -ForegroundColor Yellow }
 
 if ($failed.Count) { Write-Host "`n$($failed.Count) group(s) failed: $($failed -join ', ')" -ForegroundColor Red; exit 1 }

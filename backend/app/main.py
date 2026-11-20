@@ -10,7 +10,7 @@ from sqlalchemy import text
 from . import errors
 from .config import get_settings
 from .db import engine
-from .routers import auth, banking, chat
+from .routers import auth, banking, chat, requests
 
 settings = get_settings()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -80,4 +80,5 @@ def health():
 
 app.include_router(auth.router)
 app.include_router(banking.router)
+app.include_router(requests.router)
 app.include_router(chat.router)

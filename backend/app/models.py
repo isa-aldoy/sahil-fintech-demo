@@ -160,3 +160,23 @@ class PendingAction(Base):
     status: Mapped[str] = mapped_column(String(12), default="pending")
     created_at: Mapped[datetime] = mapped_column(TS, server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(TS)
+
+
+class PaymentRequest(Base):
+    """'Layla asks Noor for 7.500 BHD.' Only the payer can pay or decline; only the requester can cancel."""
+    __tablename__ = "payment_requests"
+    __table_args__ = (
+        CheckConstraint("amount_fils > 0", name="ck_requests_positive"),
+        CheckConstraint("requester_id <> payer_id", name="ck_requests_distinct"),
+        CheckConstraint("status IN ('pending','paid','declined','cancelled')", name="ck_requests_status"),
+        CheckConstraint("(status = 'paid') = (transfer_id IS NOT NULL)", name="ck_requests_paid_has_transfer"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    requester_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    payer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    amount_fils: Mapped[int] = mapped_column(BigInteger)
+    note: Mapped[str] = mapped_column(String(140), default="")
+    status: Mapped[str] = mapped_column(String(10), default="pending", server_default="pending")
+    transfer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("transfers.id"))
+    created_at: Mapped[datetime] = mapped_column(TS, server_default=func.now())
+    decided_at: Mapped[datetime | None] = mapped_column(TS)

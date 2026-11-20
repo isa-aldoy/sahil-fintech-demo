@@ -36,6 +36,15 @@ MockClient fakeBackend() => MockClient((request) async {
            'title': 'Coffee Corner', 'category': 'food', 'note': '', 'kind': 'card', 'created_at': '2026-11-14T09:00:00Z'},
         ]);
       }
+      if (path.endsWith('/requests')) {
+        return json({
+          'incoming': [
+            {'id': 'q1', 'direction': 'incoming', 'other_name': 'Layla M.', 'other_handle': 'layla', 'amount_fils': 4000,
+             'amount': '4.000', 'note': 'Movie tickets', 'status': 'pending', 'created_at': '2026-11-15T09:00:00Z'},
+          ],
+          'outgoing': [],
+        });
+      }
       if (path.endsWith('/insights')) {
         return json({'days': 30, 'spent_fils': 1800, 'spent': '1.800', 'received_fils': 0, 'received': '0.000', 'categories': []});
       }
@@ -80,6 +89,8 @@ void main() {
     expect(find.text('Hello, Noor'), findsOneWidget);
     expect(find.textContaining('432.500', findRichText: true), findsOneWidget);
     expect(find.textContaining('Coffee Corner'), findsWidgets);
+    expect(find.textContaining('asked you for 4.000'), findsOneWidget);
+    expect(find.text('Pay'), findsOneWidget);
   });
 
   testWidgets('Arabic switches the app to right-to-left', (tester) async {
